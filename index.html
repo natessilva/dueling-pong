@@ -13,8 +13,6 @@
       }
       canvas {
         width: 100%;
-        border: 1px solid black;
-        box-sizing: border-box;
         image-rendering: crisp-edges;
       }
       span {
@@ -31,7 +29,6 @@
   </head>
   <body>
     <canvas id="canvas"></canvas>
-
     <span id="left"></span>
     <span id="right"></span>
     <script>
@@ -44,9 +41,9 @@
       const right = document.getElementById("right");
 
       const ball1 = { x: 0, y: 0, isLeft: true };
-      const velocity1 = { x: 5, y: 8 };
+      const velocity1 = { x: -8, y: 5 };
       const ball2 = { x: 400, y: 300, isLeft: false };
-      const velocity2 = { x: 8, y: 5 };
+      const velocity2 = { x: 8, y: -5 };
       const ballSize = 16;
       const boardSize = boxSize / ballSize;
 
@@ -56,7 +53,6 @@
         }))
       );
 
-      // render initial board
       function renderBoard() {
         board.forEach((row, y) =>
           row.forEach(({ isLeft }, x) => {
@@ -67,44 +63,56 @@
       }
 
       function renderBall(ball) {
+        context.beginPath();
+        context.arc(
+          ball.x + ballSize / 2,
+          ball.y + ballSize / 2,
+          ballSize / 2,
+          0,
+          2 * Math.PI,
+          false
+        );
         context.fillStyle = !ball.isLeft ? "dimgray" : "blue";
-        context.fillRect(ball.x, ball.y, ballSize, ballSize);
+        context.fill();
       }
 
-      function getCollisions(position) {
-        const x = Math.floor(position.x / ballSize);
-        const y = Math.floor(position.y / ballSize);
-        const collisions = [
-          { x, y },
-          { x, y: y + 1 },
-          { x: x + 1, y },
-          { x: x + 1, y: y + 1 },
-        ].filter(
-          (collision) =>
-            collision.x >= 0 &&
-            collision.x < boardSize &&
-            collision.y >= 0 &&
-            collision.y < boardSize
+      function isOnBoard({ x, y }) {
+        return x >= 0 && x < boardSize && y >= 0 && y < boardSize;
+      }
+
+      function floorBall(ball) {
+        return {
+          x: Math.floor(ball.x / ballSize),
+          y: Math.floor(ball.y / ballSize),
+        };
+      }
+
+      function collides(a, b) {
+        return [a.x, a.x + 1].includes(b.x) && [a.y, a.y + 1].includes(b.y);
+      }
+
+      function addX({ x, y }) {
+        return { x: x + 1, y };
+      }
+
+      function addY({ x, y }) {
+        return { x, y: y + 1 };
+      }
+
+      function getCollisions(oldPos, newPos) {
+        return [newPos, addX(newPos), addY(newPos), addX(addY(newPos))].filter(
+          (c) => !collides(oldPos, c) && isOnBoard(c)
         );
-        return collisions;
       }
 
       function updateBall(ball, velocity) {
-        const collisionsBefore = getCollisions(ball);
+        const oldPos = floorBall(ball);
         ball.x += velocity.x;
         ball.y += velocity.y;
-        const collisionsAfter = getCollisions(ball);
-        // only new collisions apply
-        const collisions = collisionsAfter
-          .filter(
-            (collision) =>
-              collisionsBefore.find(
-                (c) => collision.x == c.x && collision.y == c.y
-              ) == null
-          )
-          .filter((collision) => {
-            return board[collision.y][collision.x].isLeft != ball.isLeft;
-          });
+        const newPos = floorBall(ball);
+        const collisions = getCollisions(oldPos, newPos).filter((collision) => {
+          return board[collision.y][collision.x].isLeft != ball.isLeft;
+        });
 
         const newVelocity = { x: velocity.x, y: velocity.y };
 
@@ -115,15 +123,13 @@
             Math.abs(collision.x * ballSize - ball.x) <
             Math.abs(collision.y * ballSize - ball.y)
           ) {
-            const percent = Math.random() * 0.1 + 0.95;
+            const percent = Math.random() * 0.001 + 0.9995;
             newVelocity.y = velocity.y * -1 * percent;
           } else {
-            const percent = Math.random() * 0.1 + 0.95;
+            const percent = Math.random() * 0.001 + 0.9995;
             newVelocity.x = velocity.x * -1 * percent;
           }
           const square = board[collision.y][collision.x];
-
-          // flip the collision square
           square.isLeft = !square.isLeft;
         });
 
