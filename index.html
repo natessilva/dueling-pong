@@ -5,25 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dueling Pong</title>
     <style>
-      canvas {
+      body {
         display: block;
-        margin: auto;
+        width: 90%;
+        margin: 1em auto;
+        max-width: 512px;
+      }
+      canvas {
+        width: 100%;
         border: 1px solid black;
         box-sizing: border-box;
-        width: 90%;
-        max-width: 512px;
         image-rendering: crisp-edges;
+      }
+      span {
+        margin-right: 1em;
+      }
+      #left {
+        color: dimgray;
+      }
+      #right {
+        color: blue;
       }
     </style>
   </head>
   <body>
     <canvas id="canvas"></canvas>
+
+    <span id="left"></span>
+    <span id="right"></span>
     <script>
       const boxSize = 512;
       const canvas = document.getElementById("canvas");
       canvas.width = boxSize;
       canvas.height = boxSize;
       const context = canvas.getContext("2d");
+      const left = document.getElementById("left");
+      const right = document.getElementById("right");
 
       const ball1 = { x: 0, y: 0 };
       const velocity1 = { x: 10, y: 8 };
@@ -34,14 +51,14 @@
 
       const board = Array.from({ length: boxSize / ballSize }).map((_, y) =>
         Array.from({ length: boxSize / ballSize }).map((_, x) => ({
-          isWhite: x < ballSize,
+          isLeft: x < ballSize,
         }))
       );
 
       // render initial board
       board.forEach((row, y) =>
-        row.forEach(({ isWhite }, x) => {
-          context.fillStyle = isWhite ? "white" : "blue";
+        row.forEach(({ isLeft }, x) => {
+          context.fillStyle = isLeft ? "dimgray" : "blue";
           context.fillRect(x * ballSize, y * ballSize, ballSize, ballSize);
         })
       );
@@ -64,9 +81,9 @@
         return collisions;
       }
 
-      function updateBall(ball, velocity, isWhite) {
+      function updateBall(ball, velocity, isLeft) {
         // clear the old ball
-        context.fillStyle = !isWhite ? "white" : "blue";
+        context.fillStyle = !isLeft ? "dimgray" : "blue";
         context.fillRect(
           Math.floor(ball.x),
           Math.floor(ball.y),
@@ -76,7 +93,8 @@
         const collisionsBefore = getCollisions(ball);
         ball.x += velocity.x;
         ball.y += velocity.y;
-        context.fillStyle = isWhite ? "white" : "blue";
+        // draw the new ball
+        context.fillStyle = isLeft ? "dimgray" : "blue";
         context.fillRect(
           Math.floor(ball.x),
           Math.floor(ball.y),
@@ -84,6 +102,7 @@
           ballSize
         );
         const collisionsAfter = getCollisions(ball);
+        // only new collisions apply
         const collisions = collisionsAfter
           .filter(
             (collision) =>
@@ -92,25 +111,29 @@
               ) == null
           )
           .filter((collision) => {
-            return board[collision.y][collision.x].isWhite == isWhite;
+            return board[collision.y][collision.x].isLeft == isLeft;
           });
 
         const newVelocity = { x: velocity.x, y: velocity.y };
 
         // check for color colisions
         collisions.forEach((collision) => {
+          // bounce in the direction of the larger distance
           if (
             Math.abs(collision.x * ballSize - ball.x) <
             Math.abs(collision.y * ballSize - ball.y)
           ) {
-            newVelocity.y = velocity.y * -1;
+            const percent = Math.random() * 0.1 + 0.95;
+            newVelocity.y = velocity.y * -1 * percent;
           } else {
-            newVelocity.x = velocity.x * -1;
+            const percent = Math.random() * 0.1 + 0.95;
+            newVelocity.x = velocity.x * -1 * percent;
           }
           const square = board[collision.y][collision.x];
-          square.isWhite = !square.isWhite;
 
-          context.fillStyle = square.isWhite ? "white" : "blue";
+          // flip the collision square
+          square.isLeft = !square.isLeft;
+          context.fillStyle = square.isLeft ? "dimgray" : "blue";
           context.fillRect(
             collision.x * ballSize,
             collision.y * ballSize,
@@ -121,6 +144,7 @@
 
         velocity.x = newVelocity.x;
         velocity.y = newVelocity.y;
+        // detect walls
         if (ball.x > boxSize - ballSize || ball.x < 0) {
           velocity.x *= -1;
         }
@@ -132,6 +156,10 @@
       function render() {
         updateBall(ball1, velocity1, false);
         updateBall(ball2, velocity2, true);
+        const leftCount = board.flat().filter((square) => square.isLeft).length;
+        const rightCount = boardSize * boardSize - leftCount;
+        left.innerHTML = leftCount.toString();
+        right.innerHTML = rightCount.toString();
         requestAnimationFrame(render);
       }
 
