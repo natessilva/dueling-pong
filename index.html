@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dueling Pong</title>
+    <style>
+      canvas {
+        display: block;
+        margin: auto;
+        border: 1px solid black;
+        box-sizing: border-box;
+        width: 90%;
+        max-width: 512px;
+        image-rendering: crisp-edges;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script>
+      const boxSize = 512;
+      const canvas = document.getElementById("canvas");
+      canvas.width = boxSize;
+      canvas.height = boxSize;
+      const context = canvas.getContext("2d");
+
+      const ball1 = { x: 0, y: 0 };
+      const velocity1 = { x: 10, y: 8 };
+      const ball2 = { x: 400, y: 300 };
+      const velocity2 = { x: 8, y: 10 };
+      const ballSize = 16;
+      const boardSize = boxSize / ballSize;
+
+      const board = Array.from({ length: boxSize / ballSize }).map((_, y) =>
+        Array.from({ length: boxSize / ballSize }).map((_, x) => ({
+          isWhite: x < ballSize,
+        }))
+      );
+
+      // render initial board
+      board.forEach((row, y) =>
+        row.forEach(({ isWhite }, x) => {
+          context.fillStyle = isWhite ? "white" : "blue";
+          context.fillRect(x * ballSize, y * ballSize, ballSize, ballSize);
+        })
+      );
+
+      function getCollisions(position) {
+        const x = Math.floor(position.x / ballSize);
+        const y = Math.floor(position.y / ballSize);
+        const collisions = [
+          { x, y },
+          { x, y: y + 1 },
+          { x: x + 1, y },
+          { x: x + 1, y: y + 1 },
+        ].filter(
+          (collision) =>
+            collision.x >= 0 &&
+            collision.x < boardSize &&
+            collision.y >= 0 &&
+            collision.y < boardSize
+        );
+        return collisions;
+      }
+
+      function updateBall(ball, velocity, isWhite) {
+        // clear the old ball
+        context.fillStyle = !isWhite ? "white" : "blue";
+        context.fillRect(
+          Math.floor(ball.x),
+          Math.floor(ball.y),
+          ballSize,
+          ballSize
+        );
+        const collisionsBefore = getCollisions(ball);
+        ball.x += velocity.x;
+        ball.y += velocity.y;
+        context.fillStyle = isWhite ? "white" : "blue";
+        context.fillRect(
+          Math.floor(ball.x),
+          Math.floor(ball.y),
+          ballSize,
+          ballSize
+        );
+        const collisionsAfter = getCollisions(ball);
+        const collisions = collisionsAfter
+          .filter(
+            (collision) =>
+              collisionsBefore.find(
+                (c) => collision.x == c.x && collision.y == c.y
+              ) == null
+          )
+          .filter((collision) => {
+            return board[collision.y][collision.x].isWhite == isWhite;
+          });
+
+        const newVelocity = { x: velocity.x, y: velocity.y };
+
+        // check for color colisions
+        collisions.forEach((collision) => {
+          if (
+            Math.abs(collision.x * ballSize - ball.x) <
+            Math.abs(collision.y * ballSize - ball.y)
+          ) {
+            newVelocity.y = velocity.y * -1;
+          } else {
+            newVelocity.x = velocity.x * -1;
+          }
+          const square = board[collision.y][collision.x];
+          square.isWhite = !square.isWhite;
+
+          context.fillStyle = square.isWhite ? "white" : "blue";
+          context.fillRect(
+            collision.x * ballSize,
+            collision.y * ballSize,
+            ballSize,
+            ballSize
+          );
+        });
+
+        velocity.x = newVelocity.x;
+        velocity.y = newVelocity.y;
+        if (ball.x > boxSize - ballSize || ball.x < 0) {
+          velocity.x *= -1;
+        }
+        if (ball.y > boxSize - ballSize || ball.y < 0) {
+          velocity.y *= -1;
+        }
+      }
+
+      function render() {
+        updateBall(ball1, velocity1, false);
+        updateBall(ball2, velocity2, true);
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    </script>
+  </body>
+</html>
