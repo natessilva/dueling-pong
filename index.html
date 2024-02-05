@@ -20,7 +20,7 @@
         font-size: 1.5em;
       }
       #left {
-        color: dimgray;
+        color: orange;
       }
       #right {
         color: blue;
@@ -56,7 +56,7 @@
       function renderBoard() {
         board.forEach((row, y) =>
           row.forEach(({ isLeft }, x) => {
-            context.fillStyle = isLeft ? "dimgray" : "blue";
+            context.fillStyle = isLeft ? "orange" : "blue";
             context.fillRect(x * ballSize, y * ballSize, ballSize, ballSize);
           })
         );
@@ -72,7 +72,7 @@
           2 * Math.PI,
           false
         );
-        context.fillStyle = !ball.isLeft ? "dimgray" : "blue";
+        context.fillStyle = !ball.isLeft ? "orange" : "blue";
         context.fill();
       }
 

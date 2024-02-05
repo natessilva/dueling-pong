@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AJ's world</title>
+    <style>
+      body {
+        display: block;
+        width: 90%;
+        margin: 1em auto;
+        max-width: 512px;
+      }
+      canvas {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+  </body>
+  <script>
+    const tileSize = 16;
+    const width = 32;
+    const height = 32;
+    const canvas = document.getElementById("canvas");
+    canvas.width = width * tileSize;
+    canvas.height = width * tileSize;
+
+    const context = canvas.getContext("2d");
+
+    function drawCirle(point, color) {
+      context.fillStyle = color;
+      context.beginPath();
+      context.arc(
+        point.x * tileSize + tileSize / 2,
+        point.y * tileSize + tileSize / 2,
+        tileSize / 2,
+        0,
+        2 * Math.PI,
+        false
+      );
+      context.fill();
+    }
+
+    const balls = Array.from({ length: 10 }).map(() => {
+      return {
+        ball: {
+          x: Math.random() * (width - 1),
+          y: Math.random() * (height - 1),
+        },
+        velocity: {
+          x: (Math.random() * width * 2) / 60,
+          y: (Math.random() * height * 2) / 60,
+        },
+        color: `rgb(${Math.random() * 256},${Math.random() * 256},${
+          Math.random() * 256
+        })`,
+      };
+    });
+
+    function gameLoop() {
+      context.fillStyle = "blue";
+      context.fillRect(0, 0, 512, 512);
+
+      balls.forEach(({ ball, velocity, color }) => {
+        ball.x += velocity.x;
+        ball.y += velocity.y;
+
+        if (ball.x <= 0 || ball.x >= width - 1) {
+          velocity.x *= -1;
+        }
+        if (ball.y <= 0 || ball.y >= width - 1) {
+          velocity.y *= -1;
+        }
+      });
+      balls.forEach(({ ball, velocity, color }) => {
+        drawCirle(ball, color);
+      });
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    requestAnimationFrame(gameLoop);
+  </script>
+</html>
